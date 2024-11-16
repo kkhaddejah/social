@@ -1,0 +1,100 @@
+{% extends 'users/base.html' %}
+{% load mathfilters %}
+{% load static %}
+{% block body %}
+<div class="flex mt-5 p-10 justify-center">
+    <h2 class="text-3xl font-normal mb-2 text-gray-500">My Posts</h2>
+</div>
+<div class="grid mx-60 p-10 grid-cols-1 gap-5">
+    {% for post in posts %}
+    <!-- card starts here -->
+    <a href="#">
+        <div class="rounded overflow-hidden w-full bg-white shadow-lg">
+            <div class="user-container flex items-center p-5">
+                <img class="w-10 h-10 rounded-full" src="{{ post.user.profile.photo.url }}" alt="{{ post.user.username }}">
+                <div class="mx-3 font-bold">
+                    <span class="text-indigo-500">{{ post.user }}</span>
+                </div>
+            </div>
+            <img class="w-full" src="{{ post.image.url }}" alt="{{ post.title }}">
+        </div>
+        <div class="px-6 py-4">
+            <div class="icon-container flex gap-3 items-center">
+                <a href="#" id="{{ post.id }}" class="btn-like">
+                    {% if logged_user in post.liked_by.all %}
+                    <img class="w-7 h-7" src="{% static 'users/images/like2.png' %}" alt="">
+                    {% else %}
+                    <img class="w-8 h-8" src="{% static 'users/images/like.png' %}" alt="">
+                    {% endif %}
+                </a>
+                <img class="w-5 h-5" src="{% static 'users/images/comment.png' %}" alt="">
+                <img class="w-7 h-7" src="{% static 'users/images/share.png' %}" alt="">
+            </div>
+        </div>
+        <div>
+            {% if post.liked_by.count < 1 %}
+            {% elif post.liked_by.count == 1 %}
+            {{ post.liked_by.first }} Likes this
+            {% elif post.liked_by.count > 1 %}
+            {{ post.liked_by.first }} & {{ post.liked_by.count|sub:1 }} other Likes this
+            {% endif %}
+        </div>
+        <div class="px-6 py-4">
+            <div class="font-bold text-xl mb-2">{{post.title}}</div>
+            <p class="text-gray-700 text-base">{{post.caption}}</p>
+        </div>
+        <div class="px-5 py-5">
+            {% for comment in post.comments.all %}
+            <b>{{comment.posted_by}}</b>:{{ comment.body }}
+        </br>
+            {% endfor %}
+        </div>
+        <div class="px-5 pu-5">
+            <form method="post" class="bg-white rounded">
+                {% csrf_token %}
+                <div class="flex">
+                    
+                    <div class="border rounded mr-10 text-gray-700">
+                        {{ comment_form.body }}
+                    </div>
+                        <input type="hidden" name="post_id" id="post_id" value="{{ post.id }}">  
+                        <input type="hidden" name="posted_by" id="posted_by" value="{{ logged_user }}">
+                        <button class="bg-green-500 text-white px-5 py-2" type="submit">Add</button>
+                </div>
+                
+                </div>
+            </form>
+        </div>
+    </a>
+    <!-- card ends here -->
+    {% endfor %}
+</div>
+
+<script type="text/javascript">
+    window.CSRF_TOKEN = "{{ csrf_token }}";
+    console.log("CSRF Token:", window.CSRF_TOKEN);
+    
+    $(document).on('click', '.btn-like', function(e) {
+        e.preventDefault();  // Prevent default action
+        console.log('Like button clicked');
+        var post_id = this.id;
+        console.log('Post ID:', post_id);
+    
+        $.ajax({
+            method: "POST",
+            url: "{% url 'like' %}",  // Ensure this URL is correct
+            data: {
+                post_id: post_id,
+                csrfmiddlewaretoken: window.CSRF_TOKEN
+            },
+            success: function(response) {
+                console.log('Post liked successfully', response);
+                // Optionally update the UI to reflect the like
+            },
+            error: function(xhr, status, error) {
+                console.error('Error liking the post:', xhr.responseText);
+            }
+        });
+    });
+</script>
+{% endblock %}
